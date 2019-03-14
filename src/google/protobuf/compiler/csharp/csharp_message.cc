@@ -123,8 +123,30 @@ void MessageGenerator::Generate(io::Printer* printer) {
 
   printer->Print(
     vars,
-    "$access_level$ sealed partial class $class_name$ : pb::IMessage<$class_name$> {\n");
+    "$access_level$ sealed partial class $class_name$ : pb::IMessage<$class_name$>, IRevertibleChangeTracking {\n");
   printer->Indent();
+
+  printer->Print(
+      vars,
+      "#region IRevertibleChangeTracking\n"
+      "private readonly scg.Dictionary<string, object> _changedValues = new scg.Dictionary<string, object>();\n"
+      "public bool IsChanged { get; private set; }\n"
+      "\n"
+      "public void RejectChanges()\n"
+      "{\n"
+      "  foreach (var property in _changedValues)\n"
+      "  {\n"
+      "    GetType().GetRuntimeProperty(property.Key).SetValue(this, property.Value);\n"
+      "  }\n"
+      "  AcceptChanges();\n"
+      "}\n"
+      "\n"
+      "public void AcceptChanges()\n"
+      "{\n"
+      "  _changedValues.Clear();\n"
+      "  IsChanged = false;\n"
+      "}\n"
+      "#endregion\n");
 
   // All static fields and properties
   printer->Print(

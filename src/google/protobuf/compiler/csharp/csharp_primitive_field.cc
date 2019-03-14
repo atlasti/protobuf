@@ -99,21 +99,32 @@ void PrimitiveFieldGenerator::GenerateMembers(io::Printer* printer) {
       "  get { return $name$_; }\n"
       "  set {\n");
   }
+  printer->Print(
+    variables_,
+      "    if ($name$_ != value)\n"
+      "    {\n"
+      "      if (!_changedValues.ContainsKey(nameof($property_name$)))\n"
+      "      {\n"
+      "        _changedValues[nameof($property_name$)] = $name$_;\n"
+      "      }\n"
+      "\n");
   if (presenceIndex_ != -1) {
     printer->Print(
       variables_,
-      "    $set_has_field$;\n");
+      "      $set_has_field$;\n");
   }
   if (is_value_type) {
     printer->Print(
       variables_,
-      "    $name$_ = value;\n");
+      "      $name$_ = value;\n");
   } else {
     printer->Print(
       variables_,
-      "    $name$_ = pb::ProtoPreconditions.CheckNotNull(value, \"value\");\n");
+      "      $name$_ = pb::ProtoPreconditions.CheckNotNull(value, \"value\");\n");
   }
   printer->Print(
+    "      IsChanged = true;\n"
+    "    }\n"
     "  }\n"
     "}\n");
   if (IsProto2(descriptor_->file())) {
