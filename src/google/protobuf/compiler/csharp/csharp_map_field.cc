@@ -85,6 +85,24 @@ void MapFieldGenerator::GenerateMembers(io::Printer* printer) {
     "$access_level$ pbc::MapField<$key_type_name$, $value_type_name$> $property_name$ {\n"
     "  get { return $name$_; }\n"
     "}\n");
+  printer->Print(
+    variables_, R"ATLA5ti(
+public void AddTo$property_name$($key_type_name$ key, $value_type_name$ value)
+{
+    if ($name$_.ContainsKey(key)) return;
+    $name$_[key] = value;
+    var eventArgs = new DictionaryChangedEventArgs(nameof($name$_), key, value, true);
+    DictionaryDidChangeEventHandler?.Invoke(this, eventArgs);
+}
+
+public void RemoveFrom$property_name$($key_type_name$ key)
+{
+    if (!$name$_.ContainsKey(key)) return;
+    var eventArgs = new DictionaryChangedEventArgs(nameof($name$_), key, $name$_[key], false);
+    $name$_.Remove(key);
+    DictionaryDidChangeEventHandler?.Invoke(this, eventArgs);
+}
+)ATLA5ti");
 }
 
 void MapFieldGenerator::GenerateMergingCode(io::Printer* printer) {

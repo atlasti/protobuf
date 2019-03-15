@@ -123,30 +123,15 @@ void MessageGenerator::Generate(io::Printer* printer) {
 
   printer->Print(
     vars,
-    "$access_level$ sealed partial class $class_name$ : pb::IMessage<$class_name$>, IRevertibleChangeTracking {\n");
+    "$access_level$ sealed partial class $class_name$ : pb::IMessage<$class_name$>, IDisposable {\n");
   printer->Indent();
 
   printer->Print(
-      vars,
-      "#region IRevertibleChangeTracking\n"
-      "private readonly scg.Dictionary<string, object> _changedValues = new scg.Dictionary<string, object>();\n"
-      "public bool IsChanged { get; private set; }\n"
-      "\n"
-      "public void RejectChanges()\n"
-      "{\n"
-      "  foreach (var property in _changedValues)\n"
-      "  {\n"
-      "    GetType().GetRuntimeProperty(property.Key).SetValue(this, property.Value);\n"
-      "  }\n"
-      "  AcceptChanges();\n"
-      "}\n"
-      "\n"
-      "public void AcceptChanges()\n"
-      "{\n"
-      "  _changedValues.Clear();\n"
-      "  IsChanged = false;\n"
-      "}\n"
-      "#endregion\n");
+      vars, R"ATLA5ti(
+public event EventHandler<PropertyChangedEventArgs> PropertyDidChangeEventHandler;
+public event EventHandler<ListChangedEventArgs> ListDidChangeEventHandler;
+public event EventHandler<DictionaryChangedEventArgs> DictionaryDidChangeEventHandler;
+)ATLA5ti");
 
   // All static fields and properties
   printer->Print(
@@ -201,11 +186,24 @@ void MessageGenerator::Generate(io::Printer* printer) {
   // Parameterless constructor and partial OnConstruction method.
   WriteGeneratedCodeAttributes(printer);
   printer->Print(
-    vars,
-    "public $class_name$() {\n"
-    "  OnConstruction();\n"
-    "}\n\n"
-    "partial void OnConstruction();\n\n");
+    vars, R"ATLA5ti(
+public $class_name$() {
+  OnConstruction();
+  PropertyDidChangeEventHandler += ModelObserver.Instance.HandlePropertyChangedEvent;
+  ListDidChangeEventHandler += ModelObserver.Instance.HandleListChangedEvent;
+  DictionaryDidChangeEventHandler += ModelObserver.Instance.HandleDictionaryChangedEvent;
+}
+
+partial void OnConstruction();
+
+public void Dispose()
+{
+    PropertyDidChangeEventHandler -= ModelObserver.Instance.HandlePropertyChangedEvent;
+    ListDidChangeEventHandler -= ModelObserver.Instance.HandleListChangedEvent;
+    DictionaryDidChangeEventHandler -= ModelObserver.Instance.HandleDictionaryChangedEvent;
+}
+    
+)ATLA5ti");
 
   GenerateCloningCode(printer);
   GenerateFreezingCode(printer);

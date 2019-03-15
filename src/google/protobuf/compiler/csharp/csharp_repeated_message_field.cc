@@ -84,6 +84,25 @@ void RepeatedMessageFieldGenerator::GenerateMembers(io::Printer* printer) {
     "$access_level$ pbc::RepeatedField<$type_name$> $property_name$ {\n"
     "  get { return $name$_; }\n"
     "}\n");
+  printer->Print(
+    variables_, R"ATLA5ti(
+public void AddTo$property_name$($type_name$ entry)
+{
+    if ($name$_.Contains(entry)) return;
+    $name$_.Add(entry);
+    var eventArgs = new ListChangedEventArgs(nameof($name$_), $name$_, true);
+    ListDidChangeEventHandler?.Invoke(this, eventArgs);
+}
+
+public void RemoveFrom$property_name$($type_name$ entry)
+{
+    if (!$name$_.Contains(entry)) return;
+    $name$_.Remove(entry);
+    var eventArgs = new ListChangedEventArgs(nameof($name$_), $name$_, false);
+    ListDidChangeEventHandler?.Invoke(this, eventArgs);
+}
+    
+)ATLA5ti");
 }
 
 void RepeatedMessageFieldGenerator::GenerateMergingCode(io::Printer* printer) {

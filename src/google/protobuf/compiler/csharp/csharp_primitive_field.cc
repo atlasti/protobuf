@@ -100,34 +100,30 @@ void PrimitiveFieldGenerator::GenerateMembers(io::Printer* printer) {
       "  set {\n");
   }
   printer->Print(
-    variables_,
-      "    if ($name$_ != value)\n"
-      "    {\n"
-      "      if (!_changedValues.ContainsKey(nameof($property_name$)))\n"
-      "      {\n"
-      "        _changedValues[nameof($property_name$)] = $name$_;\n"
-      "      }\n"
-      "\n");
+    variables_, R"ATLA5ti(
+      if ($name$_ == value) return;
+      var eventArgs = new PropertyChangedEventArgs(nameof($name$_), $name$_, value);
+  )ATLA5ti");
   if (presenceIndex_ != -1) {
     printer->Print(
       variables_,
-      "      $set_has_field$;\n");
+      "    $set_has_field$;\n");
   }
   if (is_value_type) {
     printer->Print(
       variables_,
-      "      $name$_ = value;\n");
+      "    $name$_ = value;\n");
   } else {
     printer->Print(
       variables_,
-      "      $name$_ = pb::ProtoPreconditions.CheckNotNull(value, \"value\");\n");
+      "    $name$_ = pb::ProtoPreconditions.CheckNotNull(value, \"value\");\n");
   }
-  printer->Print(
-    "      IsChanged = true;\n"
-    "    }\n"
-    "  }\n"
-    "}\n");
-  if (IsProto2(descriptor_->file())) {
+  printer->Print(R"ATLA5ti(
+      PropertyDidChangeEventHandler?.Invoke(this, eventArgs);
+    }
+  }
+)ATLA5ti");
+    if (IsProto2(descriptor_->file())) {
     printer->Print(variables_, "/// <summary>Gets whether the \"$descriptor_name$\" field is set</summary>\n");
     AddPublicMemberAttributes(printer);
     printer->Print(
